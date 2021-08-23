@@ -1,86 +1,96 @@
 import binary
 
-FLAG='000000'
-
-# 0001000100000101
-
 def get_type(reg, bin):
     for key, value in reg.items():
         if value == bin:
             return True
-
     return False
 
 def checkTypeA(cmd, reg):
-    r1 = binary.registers(cmd[7:10])
-    r2 = binary.registers(cmd[10:13])
-    r3 = binary.registers(cmd[13:16])
+    
+
+    r1 = binary.registers[cmd[7:10]]
+    r2 = binary.registers[cmd[10:13]]
+    r3 = binary.registers[cmd[13:16]]
     
     if binary.typeA['add'] == cmd[:5]:
         reg[r1] = reg[r2] + reg[r3]
 
-    elif binary.typeA['sub']==cmd[:5]:
+    elif binary.typeA['sub'] == cmd[:5]:
         reg[r1] = reg[r2] - reg[r3]
 
-    elif binary.typeA['mul']==cmd[:5]:
+    elif binary.typeA['mul'] == cmd[:5]:
         reg[r1] = reg[r2] * reg[r3]
 
-    elif binary.typeA['xor']==cmd[:5]:
+    elif binary.typeA['xor'] == cmd[:5]:
         reg[r1] = reg[r2] ^ reg[r3]
 
-    elif binary.typeA['or']==cmd[:5]:
+    elif binary.typeA['or'] == cmd[:5]:
         reg[r1] = reg[r2] | reg[r3]
 
-    elif binary.typeA['and']==cmd[:5]:
+    elif binary.typeA['and'] == cmd[:5]:
         reg[r1] = reg[r2] & reg[r3]
 
-def checkTypeB(cmd,reg,bin_reg):
+
+    if reg[r1] >256 or reg[r1] < 0:
+         reg['FLAGS'] = 8
+
+def checkTypeB(cmd,reg):
     
-    r1 = binary.registers(cmd[5:8])
-    r2 = binary.registers(cmd[8:16])
+    
+    r1 = binary.registers[cmd[5:8]]
+    n1 = cmd[8:16]
 
     if binary.typeB['mov'] == cmd[:5]:
-        reg[r1] = int(cmd[8:16],2)
+        reg[r1] = int(n1,2)
 
     elif binary.typeB['ls'] == cmd[:5]:
-        reg[r1] = (2**int(cmd[8:16],2))*reg[r1]
+        reg[r1] = (2**int(n1,2))*reg[r1]
 
     elif binary.typeB['rs'] == cmd[:5]:
-        reg[r1] = reg[r1] / (2**int(cmd[8:16],2))
+        reg[r1] = reg[r1] / (2**int(n1,2))
+
+def checkTypeC(cmd, reg):
+
+    r1 = binary.registers[cmd[10:13]]
+    r2 = binary.registers[cmd[13:16]]
+
+    if cmd[:5] == binary.typeC['mov']:
+        reg[r1] = reg[r2]
 
 
-def checkTypeC(cmd,reg):
+    elif cmd[:5] == binary.typeC['div']:
+        reg['R0'] = reg[r1] // reg[r2] #stores quotient in R0
+        reg['R1'] = reg[r1] % reg[r2] #stores remainder in R1
+    
+    else:
+        reg[r1] = int(NOT(r2),2)
 
-    r1 = binary.registers(cmd[10:13])
-    r2 = binary.registers(cmd[13:16])
 
-    if binary.typeC['mov']==cmd[:5]:
-        reg[r1]=reg[r2]
+def checkTypeD(cmd, reg, mem_dmp):
+ 
+    r1 = binary.registers[cmd[5:8]]
 
-    elif binary.typeC['div']==cmd[:5]:
-        reg[r1]=reg[r1] / reg[r2]
-        reg[r1]=reg[r1] % reg[r2]
+    if cmd[:5] == binary.typeD['ld']:
+        reg[r1] =int(mem_dmp[int(cmd[8:16],2)],2)
+    else:
+        mem_dmp[int(cmd[8:16],2)] = format(reg[r1],'016b')
+        
 
-    elif binary.typeC['cmp']==cmd[:5]:
+def NOT(x):
+    N=''
+    for i in x :
+        if i == '1' :
+            N += '0'
+        else :
+            N += '1'
+    return N
 
-        if reg[r1]==reg[r2]:
-            FLAG ='000001'
-
-        elif reg[r1]>reg[r2]:
-            FLAG = '000010'
-
-        elif reg[r1]<reg[r2]:
-            FLAG = '000100'
-
-        reset = False
-
-   # elif binary.typeC['not']==cmd[:5]:
 
 def main():
-    usr_input=[]
-    final_output = []
-    mem_dump = ["0"*16 for i in range(256)]
-    reg = {'R1' : 0 ,'R2' : 0 ,'R3' : 0 ,'R4' : 0,'R5' : 0,'R6' : 0}
+    usr_inp = []
+    mem_dmp = ['0'*16 for i in range(256)]
+    reg = {'R0':0,'R1': 0,'R2':0, 'R3':0, 'R4':0, 'R5':0, 'R6':0, 'FLAGS':0}
 
     while True:
         try:
@@ -88,23 +98,68 @@ def main():
         except EOFError:
             break
 
-        usr_input.append(line)
+        usr_inp.append(line)
 
-    for cmd in usr_input:
+    reset = True
+    PC = -1 
+
+    for indc, cmd in enumerate(usr_inp):
         
-        if get_type(binary.typeA, cmd[:5]):
+        mem_dmp[indc] = cmd
+
+        if cmd[:5] == binary.typeC['cmp']:
+        
+            r1 = binary.registers[cmd[10:13]]
+            r2 = binary.registers[cmd[13:16]]
+                    
+            if reg[r1] == reg[r2]:
+                reg['FLAGS'] = 1
+            elif reg[r1] > reg[r2]:
+                reg['FLAGS'] = 2
+            else:
+                reg['FLAGS'] = 4
+
+            reset = False
+
+        elif get_type(binary.typeA, cmd[:5]):
             checkTypeA(cmd, reg)
+            reset = True
 
         elif get_type(binary.typeB, cmd[:5]):
             checkTypeB(cmd, reg)
+            reset = True
         
         elif get_type(binary.typeC, cmd[:5]):
             checkTypeC(cmd, reg)
+            reset = True
+
+        elif get_type(binary.typeD, cmd[:5]):
+            checkTypeD(cmd, reg, mem_dmp)
+            reset = True
             
         else:
-            print("Not Valid")
+            reset = True
 
+        if reset == True:
+            reg['FLAGS'] = 0
+
+        PC += 1
+
+        fin = ''
+        fin += format(PC, '08b') + ' '
+        for i in reg.keys():
+            fin += format(reg[i], "016b") + " "
+
+        print(fin)
+
+    for mem in mem_dmp:
+        print(mem)
 
 if __name__ == '__main__':
     main()
 
+
+
+    
+
+    
