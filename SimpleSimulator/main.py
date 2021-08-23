@@ -1,4 +1,5 @@
 import binary
+import matplotlib.pyplot as plt
 
 def get_type(reg, bin):
     for key, value in reg.items():
@@ -76,13 +77,34 @@ def checkTypeD(cmd, reg, mem_dmp):
     else:
         mem_dmp[int(cmd[8:16],2)] = format(reg[r1],'016b')
         
+def checkTypeE(cmd, reg, mem_dmp):
+
+    label_cmd = int(cmd[8:],2)
+
+    if mem_dmp[label_cmd][:5] in binary.typeA:
+        checkTypeA(mem_dmp[label_cmd], reg) 
+    
+    elif mem_dmp[label_cmd][:5] in binary.typeB:
+        checkTypeB(mem_dmp[label_cmd], reg)
+        
+    
+    elif mem_dmp[label_cmd][:5] in binary.typeC:
+        checkTypeC(mem_dmp[label_cmd], reg)
+        
+    
+    elif mem_dmp[label_cmd][:5] in binary.typeD:
+       checkTypeD(mem_dmp[label_cmd], reg)
+
+    else:
+        pass    
+
 
 def NOT(x):
     N=''
     for i in x :
         if i == '1' :
             N += '0'
-        else :
+        else :   
             N += '1'
     return N
 
@@ -136,7 +158,11 @@ def main():
         elif get_type(binary.typeD, cmd[:5]):
             checkTypeD(cmd, reg, mem_dmp)
             reset = True
-            
+        
+        elif get_type(binary.typeE, cmd[:5]):
+            checkTypeE(cmd, reg, mem_dmp)
+            reset = True
+
         else:
             reset = True
 
@@ -158,8 +184,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-
-
-    
-
-    
