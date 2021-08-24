@@ -1,4 +1,8 @@
 #!/bin/bash
 
 # Add command to run your program here
+<<<<<<< HEAD
 python3 main.py
+=======
+echo "Hello World"
+>>>>>>> 19d4e36ec30e43f7e75de33ed8fdb601f706819c
