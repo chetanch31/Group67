@@ -108,11 +108,23 @@ def NOT(x):
             N += '1'
     return N
 
+def plotGraph(x, y):
+    #X : program counter
+    #Y : memory address
+    
+    plt.scatter(x, y)
+    plt.xlabel("Cycle Number")
+    plt.ylabel("Memory address")
+    plt.savefig('bonus_question.png')
+    
 
 def main():
     usr_inp = []
     mem_dmp = ['0'*16 for i in range(256)]
     reg = {'R0':0,'R1': 0,'R2':0, 'R3':0, 'R4':0, 'R5':0, 'R6':0, 'FLAGS':0}
+
+    x = []
+    y = []
 
     while True:
         try:
@@ -178,9 +190,25 @@ def main():
 
         print(fin)
 
+        
+
+        if get_type(binary.typeD, cmd[:5]) or get_type(binary.typeE, cmd[:5]):
+            y.append(PC)
+            y.append(int(cmd[8:],2))
+            x.append(PC)
+            x.append(PC)
+        else:
+            y.append(PC)
+            x.append(PC)
+
     for mem in mem_dmp:
         print(mem)
 
+   
+    plotGraph(x, y)
+
 if __name__ == '__main__':
     main()
+
+
 
